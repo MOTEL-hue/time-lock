@@ -17,7 +17,7 @@ public sealed class MainWindow : Window
 
     public MainWindow()
     {
-        Title = "TimeLock - חסימות לפי שעות"; Width = 780; Height = 560; FontSize = 14;
+        Title = "TimeLock - חסימות לפי שעות (גרסה " + AppInfo.Version + ")"; Width = 780; Height = 560; FontSize = 14;
         FlowDirection = FlowDirection.RightToLeft; WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Loaded += (_, _) =>
         {

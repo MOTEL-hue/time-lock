@@ -2,9 +2,18 @@ name: build
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "לפרסם גרסה לעדכון אוטומטי (true/false)"
+        default: "false"
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      VERSION: 1.0.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -13,12 +22,24 @@ jobs:
       - name: tests
         run: dotnet test tests/TimeLock.Tests/TimeLock.Tests.csproj --verbosity minimal
       - name: publish service
-        run: dotnet publish src/TimeLock.Service/TimeLock.Service.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/service
+        run: dotnet publish src/TimeLock.Service/TimeLock.Service.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$env:VERSION -o publish/service
       - name: publish app
-        run: dotnet publish src/TimeLock.App/TimeLock.App.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/app
+        run: dotnet publish src/TimeLock.App/TimeLock.App.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$env:VERSION -o publish/app
+      - name: package
+        run: |
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item publish/service/TimeLock.Service.exe out/
+          Copy-Item publish/app/TimeLock.exe out/
+          Compress-Archive -Path out/TimeLock.Service.exe,out/TimeLock.exe -DestinationPath out/TimeLock-win-x64.zip -Force
       - uses: actions/upload-artifact@v4
         with:
           name: TimeLock
           path: |
-            publish/service/TimeLock.Service.exe
-            publish/app/TimeLock.exe
+            out/TimeLock.Service.exe
+            out/TimeLock.exe
+      - name: release
+        if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: ./tools/publish-release.ps1 -Version $env:VERSION
