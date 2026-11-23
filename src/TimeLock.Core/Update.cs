@@ -15,23 +15,18 @@ public static class AppInfo
 
 public static class UpdateService
 {
-    /// <summary>רק קבצים מהמאגר הזה מתקבלים כעדכון.</summary>
+    /// <summary>הקובץ מגיע מ-GitHub, ורק מהמאגר הזה.</summary>
     public const string UrlPrefix = "https://github.com/MOTEL-hue/time-lock/releases/download/";
-    public const string LatestBase = "https://github.com/MOTEL-hue/time-lock/releases/latest/download/";
 
-    /// <summary>המפתח הציבורי לבדיקת חתימת עדכונים. ריק = עדכון אוטומטי כבוי.</summary>
-    public static string PublicKeyPem = "";
+    /// <summary>התוכנה שואלת רק את האתר איזו גרסה זמינה. גרסה יוצאת ללקוחות רק אחרי שבעל האתר פרסם אותה שם.</summary>
+    public const string ManifestUrl = "https://kolhodaot.co.il/timelock/update.json";
 
-    public static byte[] Sign(RSA privateKey, byte[] data) =>
-        privateKey.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-    /// <summary>מחזיר את פרטי העדכון רק אם החתימה תקינה והכתובת מהמאגר שלנו.</summary>
-    public static UpdateManifest? ParseAndVerify(byte[] manifest, byte[] signature, RSA publicKey)
+    /// <summary>מחזיר את פרטי העדכון רק אם הם תקינים והכתובת מהמאגר שלנו.</summary>
+    public static UpdateManifest? Parse(byte[] manifest)
     {
         try
         {
-            if (!publicKey.VerifyData(manifest, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1))
-                return null;
+            if (manifest.Length > 4096) return null;
             var m = JsonSerializer.Deserialize<UpdateManifest>(manifest,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (m == null || !System.Version.TryParse(m.Version, out _)) return null;

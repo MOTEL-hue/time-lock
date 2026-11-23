@@ -41,5 +41,4 @@ jobs:
         if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
-          UPDATE_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
         run: ./tools/publish-release.ps1 -Version $env:VERSION

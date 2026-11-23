@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Security.Cryptography;
 
 namespace TimeLock.Service;
 
@@ -16,7 +15,6 @@ public sealed class Updater
     DateTime _next = DateTime.UtcNow.AddMinutes(2);
     int _busy;
     string? _stagedDir, _stagedVersion;
-    bool _warned;
 
     static Updater() => Http.DefaultRequestHeaders.UserAgent.ParseAdd("TimeLock-Updater");
 
@@ -59,17 +57,9 @@ public sealed class Updater
 
     async Task CheckAsync()
     {
-        if (string.IsNullOrWhiteSpace(UpdateService.PublicKeyPem))
-        {
-            if (!_warned) { _log.Write("עדכון אוטומטי כבוי: אין מפתח חתימה"); _warned = true; }
-            return;
-        }
-        var manifest = await Http.GetByteArrayAsync(UpdateService.LatestBase + "update.json");
-        var sig = await Http.GetByteArrayAsync(UpdateService.LatestBase + "update.json.sig");
-        using var rsa = RSA.Create();
-        rsa.ImportFromPem(UpdateService.PublicKeyPem);
-        var m = UpdateService.ParseAndVerify(manifest, sig, rsa);
-        if (m == null) { _log.Write("עדכון נדחה: חתימה או כתובת לא תקינות"); return; }
+        var manifest = await Http.GetByteArrayAsync(UpdateService.ManifestUrl);
+        var m = UpdateService.Parse(manifest);
+        if (m == null) { _log.Write("עדכון נדחה: פרטי הגרסה לא תקינים"); return; }
         if (!UpdateService.IsNewer(m.Version, AppInfo.Version)) return;
 
         var dir = Path.Combine(Paths.Dir, "update");

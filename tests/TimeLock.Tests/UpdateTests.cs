@@ -6,39 +6,31 @@ namespace TimeLock.Tests;
 public class UpdateTests
 {
     static readonly string Sha = new('a', 64);
-    static byte[] Manifest(string version, string url) =>
-        Encoding.UTF8.GetBytes($"{{\"version\":\"{version}\",\"sha256\":\"{Sha}\",\"url\":\"{url}\"}}");
+    static byte[] Manifest(string version, string url, string? sha = null) =>
+        Encoding.UTF8.GetBytes($"{{\"version\":\"{version}\",\"sha256\":\"{sha ?? Sha}\",\"url\":\"{url}\"}}");
     const string GoodUrl = UpdateService.UrlPrefix + "v1.0.5/TimeLock-win-x64.zip";
 
     [Fact]
     public void ValidManifestIsAccepted()
     {
-        using var rsa = RSA.Create(2048);
-        var data = Manifest("1.0.5", GoodUrl);
-        var m = UpdateService.ParseAndVerify(data, UpdateService.Sign(rsa, data), rsa);
+        var m = UpdateService.Parse(Manifest("1.0.5", GoodUrl));
         Assert.NotNull(m);
         Assert.Equal("1.0.5", m!.Version);
-    }
-
-    [Fact]
-    public void TamperedOrWrongKeyIsRejected()
-    {
-        using var rsa = RSA.Create(2048);
-        using var other = RSA.Create(2048);
-        var data = Manifest("1.0.5", GoodUrl);
-        var sig = UpdateService.Sign(rsa, data);
-        Assert.Null(UpdateService.ParseAndVerify(Manifest("1.0.6", GoodUrl), sig, rsa));
-        Assert.Null(UpdateService.ParseAndVerify(data, sig, other));
     }
 
     [Theory]
     [InlineData("https://evil.example.com/TimeLock-win-x64.zip")]
     [InlineData(UpdateService.UrlPrefix + "v1/x.exe")]
-    public void ForeignUrlIsRejectedEvenIfSigned(string url)
+    public void ForeignUrlIsRejected(string url) =>
+        Assert.Null(UpdateService.Parse(Manifest("1.0.5", url)));
+
+    [Fact]
+    public void BadHashOrVersionOrGarbageIsRejected()
     {
-        using var rsa = RSA.Create(2048);
-        var data = Manifest("1.0.5", url);
-        Assert.Null(UpdateService.ParseAndVerify(data, UpdateService.Sign(rsa, data), rsa));
+        Assert.Null(UpdateService.Parse(Manifest("1.0.5", GoodUrl, "short")));
+        Assert.Null(UpdateService.Parse(Manifest("not-a-version", GoodUrl)));
+        Assert.Null(UpdateService.Parse(Encoding.UTF8.GetBytes("<html>not json</html>")));
+        Assert.Null(UpdateService.Parse(new byte[5000]));
     }
 
     [Theory]

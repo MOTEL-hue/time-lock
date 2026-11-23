@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace TimeLock.Service;
 
 public static class Installer
@@ -29,8 +27,6 @@ public static class Installer
             case "--selftest":
                 // בדיקה שהקובץ עולה ומדווח על הגרסה הצפויה. משמשת את העדכון האוטומטי.
                 return args.Length > 1 && args[1] == AppInfo.Version ? 0 : 3;
-            case "--make-update-keys":
-                return MakeKeys(args.Length > 1 ? args[1] : Environment.CurrentDirectory);
             default:
                 Console.WriteLine("שימוש: TimeLock.Service.exe --install | --uninstall | --reset | --version");
                 return 1;
@@ -80,16 +76,5 @@ public static class Installer
             Console.WriteLine("ההתקנה נכשלה: " + e.Message + "\nסגור את חלון TimeLock אם הוא פתוח, והרץ שוב כמנהל.");
             return 2;
         }
-    }
-
-    /// <summary>יוצר זוג מפתחות לחתימת עדכונים: הפרטי נשאר אצלך, הציבורי נכנס לתוכנה.</summary>
-    static int MakeKeys(string dir)
-    {
-        using var rsa = RSA.Create(3072);
-        Directory.CreateDirectory(dir);
-        File.WriteAllText(Path.Combine(dir, "update-private.pem"), rsa.ExportPkcs8PrivateKeyPem());
-        File.WriteAllText(Path.Combine(dir, "update-public.pem"), rsa.ExportSubjectPublicKeyInfoPem());
-        Console.WriteLine($"נוצרו ב-{dir}: update-private.pem (סודי! רק ל-GitHub Secret) ו-update-public.pem (ציבורי).");
-        return 0;
     }
 }
