@@ -1,0 +1,20 @@
+name: build
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: tests
+        run: dotnet test tests/TimeLock.Tests/TimeLock.Tests.csproj --verbosity minimal
+      - name: publish service
+        run: dotnet publish src/TimeLock.Service/TimeLock.Service.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/service
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TimeLock-Service
+          path: publish/service/TimeLock.Service.exe
