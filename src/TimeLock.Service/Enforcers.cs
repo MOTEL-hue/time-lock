@@ -36,7 +36,7 @@ public sealed class NetworkEnforcer
         var t = n.NetworkInterfaceType;
         if (t is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel) return false;
         if (t is not (NetworkInterfaceType.Ethernet or NetworkInterfaceType.Wireless80211 or
-            NetworkInterfaceType.GigabitEthernet or NetworkInterfaceType.FastEthernet or
+            NetworkInterfaceType.GigabitEthernet or
             NetworkInterfaceType.Wwanpp or NetworkInterfaceType.Wwanpp2)) return false;
         var s = n.Name + " " + n.Description;
         return !Regex.IsMatch(s, "Virtual|vEthernet|VMware|VirtualBox|Bluetooth|Loopback|Hyper-V|TAP-|WireGuard|Npcap",
