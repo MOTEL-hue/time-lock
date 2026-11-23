@@ -14,7 +14,11 @@ jobs:
         run: dotnet test tests/TimeLock.Tests/TimeLock.Tests.csproj --verbosity minimal
       - name: publish service
         run: dotnet publish src/TimeLock.Service/TimeLock.Service.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/service
+      - name: publish app
+        run: dotnet publish src/TimeLock.App/TimeLock.App.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish/app
       - uses: actions/upload-artifact@v4
         with:
-          name: TimeLock-Service
-          path: publish/service/TimeLock.Service.exe
+          name: TimeLock
+          path: |
+            publish/service/TimeLock.Service.exe
+            publish/app/TimeLock.exe
